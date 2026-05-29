@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const MAX_UPLOAD_SIZE = 4 * 1024 * 1024; // 4MB — Vercel Hobby plan serverless limit
+export const MAX_UPLOAD_SIZE = 500 * 1024 * 1024; // 500MB — Vercel Blob client upload limit
 
 export const WELCOME_MESSAGES = [
   "Hello, I'm Bibi. Nice to meet you.",

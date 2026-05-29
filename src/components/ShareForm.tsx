@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
+import { upload } from "@vercel/blob/client";
 import {
   Camera,
   Video,
@@ -154,48 +155,63 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
     }
 
     try {
-      const submitData = new FormData();
-      if (formData.type) submitData.append("type", formData.type);
-      formData.files.forEach((file) => submitData.append("files", file));
-      submitData.append("link", formData.link);
-      submitData.append("name", formData.name);
-      submitData.append("phone", formData.phone);
-      submitData.append("email", formData.email);
-      submitData.append("message", formData.message);
+      setUploadProgress(0);
+      const blobResults: { name: string; url: string; downloadUrl: string; size: number }[] = [];
+      const filesToUpload = formData.type === "link"
+        ? []
+        : [...formData.files];
 
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        setUploadProgress(Math.round((i / Math.max(filesToUpload.length, 1)) * 90));
+        try {
+          const blob = await upload(file.name, file, {
+            access: "public",
+            handleUploadUrl: "/api/upload-url",
+          });
+          blobResults.push({
+            name: file.name,
+            url: blob.url,
+            downloadUrl: blob.downloadUrl,
+            size: file.size,
+          });
+        } catch (uploadErr) {
+          throw new Error(
+            `Failed to upload "${file.name}": ${uploadErr instanceof Error ? uploadErr.message : "Unknown error"}`
+          );
         }
+      }
+
+      if (formData.type === "link" && formData.link) {
+        blobResults.push({
+          name: `link-${Date.now()}.txt`,
+          url: formData.link,
+          downloadUrl: formData.link,
+          size: 0,
+        });
+      }
+
+      setUploadProgress(90);
+
+      const metadataRes = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: formData.type,
+          senderName: formData.name,
+          senderPhone: formData.phone,
+          senderEmail: formData.email,
+          message: formData.message,
+          files: blobResults,
+        }),
       });
 
-      await new Promise<void>((resolve, reject) => {
-        xhr.onload = () => {
-          if (xhr.status === 200) {
-            resolve();
-            return;
-          }
-          try {
-            const body = JSON.parse(xhr.responseText);
-            reject(new Error(body.error || `Server error (${xhr.status})`));
-          } catch {
-            reject(new Error(`Server error (${xhr.status}). Please try again.`));
-          }
-        };
-        xhr.onerror = () => {
-          if (xhr.status === 0) {
-            reject(new Error("Could not reach the server. Please check your connection."));
-          } else {
-            reject(new Error("Network error. Please check your connection and try again."));
-          }
-        };
-        xhr.ontimeout = () => reject(new Error("Request timed out. Files may be too large or the network is slow."));
-        xhr.timeout = 120000;
-        xhr.open("POST", "/api/upload");
-        xhr.send(submitData);
-      });
+      const metadataJson = await metadataRes.json();
+      if (!metadataRes.ok) {
+        throw new Error(metadataJson.error || `Metadata save failed (${metadataRes.status})`);
+      }
 
+      setUploadProgress(100);
       setIsSending(false);
       setIsSent(true);
       playSfx("success");

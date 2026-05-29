@@ -10,10 +10,7 @@ export function middleware(request: NextRequest) {
     adminPassword.length > 0 &&
     adminToken === adminPassword;
 
-  if (
-    request.nextUrl.pathname.startsWith("/api/files") ||
-    request.nextUrl.pathname.startsWith("/api/upload")
-  ) {
+  if (request.nextUrl.pathname.startsWith("/api/files")) {
     if (!isValid) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -23,5 +20,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/files", "/api/upload"],
+  matcher: ["/api/files"],
 };
