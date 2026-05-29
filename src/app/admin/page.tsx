@@ -79,12 +79,9 @@ export default function AdminPage() {
     setLoading(false);
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line
     fetchData();
-  }, []);
-
-  useEffect(() => {
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [fetchData]);
