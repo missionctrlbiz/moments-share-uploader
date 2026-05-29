@@ -4,9 +4,9 @@
 
 **A beautiful way to share photos, videos, and memories.**
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/bibi/moments-share-uploader)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/missionctrlbiz/moments-share-uploader)
 
-[Live Demo](https://moments.bibi.dev) · [Setup Guide](./SETUP.md) · [Report Bug](https://github.com/bibi/moments-share-uploader/issues)
+[Live Demo](https://moments-share-uploader.vercel.app) · [Admin Dashboard](https://moments-share-uploader.vercel.app/admin) · [Setup Guide](./SETUP.md)
 
 </div>
 
@@ -28,6 +28,20 @@ Moments is a personal file-sharing app. Share a URL with anyone — friends, str
 - **Confetti Celebration** — Canvas confetti burst on successful upload
 - **Mobile-First** — Fully responsive, optimized for phone usage
 - **Dark Mode** — Automatic dark/light mode based on system preference
+
+---
+
+## Live Deployment
+
+| URL | Purpose |
+|-----|---------|
+| [moments-share-uploader.vercel.app](https://moments-share-uploader.vercel.app) | Public sharing page |
+| [moments-share-uploader.vercel.app/admin](https://moments-share-uploader.vercel.app/admin) | Admin dashboard |
+| [GitHub Repo](https://github.com/missionctrlbiz/moments-share-uploader) | Source code |
+
+### Custom Domain (Optional)
+
+The app supports any custom domain. To set up a free `.is-a.dev` domain (e.g., `moments.is-a.dev`), see the [Custom Domain Setup](#custom-domain-setup-is-a-dev) section below.
 
 ---
 
@@ -138,7 +152,7 @@ moments-share-uploader/
 
 ```bash
 # Clone the repo
-git clone https://github.com/bibi/moments-share-uploader.git
+git clone https://github.com/missionctrlbiz/moments-share-uploader.git
 cd moments-share-uploader
 
 # Install dependencies
@@ -177,6 +191,81 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin) for the dashboar
 4. Click any upload to view details and use image enhance tools
 5. Get email notifications for every new upload
 6. Dashboard auto-refreshes every 15 seconds
+
+---
+
+## Custom Domain Setup (is-a.dev)
+
+Get a free `moments.is-a.dev` subdomain — no cost, ever.
+
+### Step 1: Fork the Registration Repo
+
+1. Go to [github.com/is-a-dev/register](https://github.com/is-a-dev/register)
+2. Click **Fork** (fork to your account: `missionctrlbiz`)
+
+### Step 2: Create Domain Files
+
+In your fork, create these two files in the `/domains` folder:
+
+**File 1:** `domains/moments.json`
+```json
+{
+    "owner": {
+        "username": "missionctrlbiz",
+        "email": "missionctrlbiz@users.noreply.github.com"
+    },
+    "records": {
+        "CNAME": "moments-share-uploader.vercel.app"
+    }
+}
+```
+
+### Step 3: Submit a Pull Request
+
+1. Commit and push to your fork
+2. Open a PR to [is-a-dev/register](https://github.com/is-a-dev/register)
+3. Wait for review (usually 1-3 days, sometimes faster)
+4. Join their [Discord](https://discord.gg/is-a-dev-830872854677422150) and post your PR link in `#pull-requests` for faster merging
+
+### Step 4: Add Domain to Vercel
+
+Once the PR is merged:
+1. Go to your [Vercel project settings > Domains](https://vercel.com/missionctrlbizs-projects/moments-share-uploader/settings/domains)
+2. Add `moments.is-a.dev`
+3. Vercel auto-configures SSL
+
+**Total cost: $0.** is-a.dev is sponsored by Cloudflare's Project Alexandria.
+
+### Alternative Free Domains
+
+If is-a.dev takes too long, here are other free options:
+
+| Service | Domain Examples | Setup |
+|---------|----------------|-------|
+| **Vercel default** | `moments-share-uploader.vercel.app` | Already live |
+| **pp.ua** | `*.pp.ua` | Free Ukrainian subdomains |
+| **DigitalPlat** | `.dp.ua`, `.eu.org` | Via Cloudflare → Vercel |
+| **FreeDNS** | Various community domains | CNAME to Vercel |
+| **Cloudflare** | `.com` for ~$10/yr | Cheapest real TLD |
+
+---
+
+## CI/CD Pipeline
+
+GitHub Actions runs on every push:
+
+```
+Push → Lint → Type Check → Build → Deploy (main only)
+PR   → Lint → Type Check → Build → Preview Deployment + PR Comment
+```
+
+### Required GitHub Secrets
+
+| Secret | Where to find |
+|--------|---------------|
+| `VERCEL_TOKEN` | Vercel Settings > Tokens |
+| `VERCEL_ORG_ID` | `.vercel/project.json` (after `vercel link`) |
+| `VERCEL_PROJECT_ID` | `.vercel/project.json` (after `vercel link`) |
 
 ---
 
@@ -249,6 +338,22 @@ All 10 sounds are generated programmatically using the Web Audio API — **no au
 
 Every push to `main` auto-deploys. Pull requests get preview deployments.
 
+### CLI Deployment
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login
+vercel login
+
+# Link project
+vercel link --scope missionctrlbizs-projects
+
+# Deploy to production
+vercel --prod --yes
+```
+
 ### Environment Variables
 
 See [SETUP.md](./SETUP.md) for complete variable documentation.
@@ -273,6 +378,7 @@ See [SETUP.md](./SETUP.md) for complete variable documentation.
 | **Vercel KV** | 30K commands/day | $0 |
 | **Google Drive** | 15GB storage | $0 |
 | **Resend** | 100 emails/day, 3K/mo | $0 |
+| **is-a.dev** | Free `.is-a.dev` subdomain | $0 |
 | **GitHub** | Unlimited public repos | $0 |
 
 **Total: $0/month** for personal use. All services have generous free tiers.

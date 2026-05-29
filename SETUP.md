@@ -10,12 +10,13 @@ A complete, step-by-step guide to set up Moments from scratch. Every click, ever
 2. [Google Cloud Setup (Drive API)](#google-cloud-setup)
 3. [Resend Setup (Email Notifications)](#resend-setup)
 4. [Vercel KV Setup (Database)](#vercel-kv-setup)
-5. [Environment Variables](#environment-variables)
-6. [Local Development](#local-development)
-7. [Deployment to Vercel](#deployment-to-vercel)
-8. [CI/CD with GitHub Actions](#cicd-with-github-actions)
-9. [Cost Breakdown](#cost-breakdown)
-10. [Troubleshooting](#troubleshooting)
+5. [Custom Domain Setup (is-a.dev)](#custom-domain-setup-is-a-dev)
+6. [Environment Variables](#environment-variables)
+7. [Local Development](#local-development)
+8. [Deployment to Vercel](#deployment-to-vercel)
+9. [CI/CD with GitHub Actions](#cicd-with-github-actions)
+10. [Cost Breakdown](#cost-breakdown)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -246,6 +247,62 @@ This automatically adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` to your Vercel
 
 ---
 
+## Custom Domain Setup (is-a.dev)
+
+Get a free `moments.is-a.dev` subdomain — no cost, ever. is-a.dev is sponsored by Cloudflare's Project Alexandria.
+
+### Step 1: Fork the Registration Repo
+
+1. Go to [github.com/is-a-dev/register](https://github.com/is-a-dev/register)
+2. Click **Fork** to your account (`missionctrlbiz`)
+
+### Step 2: Create Domain File
+
+In your fork, create a file in the `/domains` folder:
+
+**File:** `domains/moments.json`
+
+```json
+{
+    "owner": {
+        "username": "missionctrlbiz",
+        "email": "missionctrlbiz@users.noreply.github.com"
+    },
+    "records": {
+        "CNAME": "moments-share-uploader.vercel.app"
+    }
+}
+```
+
+### Step 3: Submit a Pull Request
+
+1. Commit and push to your fork
+2. Open a PR to [is-a-dev/register](https://github.com/is-a-dev/register)
+3. Wait for review (usually 1-3 days)
+4. Join their [Discord](https://discord.gg/is-a-dev-830872854677422150) and post your PR link in `#pull-requests` for faster merging
+
+### Step 4: Add Domain to Vercel
+
+Once the PR is merged:
+
+1. Go to your [Vercel project Settings > Domains](https://vercel.com/missionctrlbizs-projects/moments-share-uploader/settings/domains)
+2. Add `moments.is-a.dev`
+3. Vercel auto-configures SSL
+
+**Cost: $0.** The domain is free forever.
+
+### Other Free Domain Options
+
+| Service | Examples | Notes |
+|---------|----------|-------|
+| **Vercel default** | `moments-share-uploader.vercel.app` | Already live, no setup needed |
+| **is-a.dev** | `moments.is-a.dev` | Free, requires GitHub PR |
+| **pp.ua** | `*.pp.ua` | Free Ukrainian subdomains |
+| **DigitalPlat** | `.dp.ua`, `.eu.org` | Free, via Cloudflare |
+| **Cloudflare Registrar** | `.com` ~$10/yr | Cheapest real TLD |
+
+---
+
 ## Environment Variables
 
 Create a `.env.local` file in your project root:
@@ -334,7 +391,7 @@ npm run dev
    git init
    git add .
    git commit -m "Initial commit"
-   git remote add origin https://github.com/bibi/moments-share-uploader.git
+   git remote add origin https://github.com/missionctrlbiz/moments-share-uploader.git
    git push -u origin main
    ```
 
@@ -352,11 +409,11 @@ npm i -g vercel
 # Login
 vercel login
 
-# Deploy
-vercel
+# Link project
+vercel link --scope missionctrlbizs-projects
 
 # Deploy to production
-vercel --prod
+vercel --prod --yes
 ```
 
 ### Post-Deployment
