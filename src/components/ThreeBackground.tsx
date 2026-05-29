@@ -4,30 +4,33 @@ import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
+function generateParticles(count: number) {
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 20;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+
+    const color = new THREE.Color();
+    color.setHSL(0.6 + Math.random() * 0.2, 0.7, 0.6);
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+
+    sizes[i] = Math.random() * 3 + 1;
+  }
+
+  return { positions, colors, sizes };
+}
+
 function FloatingParticles({ count = 50 }: { count?: number }) {
   const mesh = useRef<THREE.Points>(null);
 
-  const particles = useMemo(() => {
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
-
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 20;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
-
-      const color = new THREE.Color();
-      color.setHSL(0.6 + Math.random() * 0.2, 0.7, 0.6);
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-
-      sizes[i] = Math.random() * 3 + 1;
-    }
-
-    return { positions, colors, sizes };
-  }, [count]);
+  // eslint-disable-next-line react-hooks/purity
+  const particles = useMemo(() => generateParticles(count), [count]);
 
   useFrame((state) => {
     if (mesh.current) {

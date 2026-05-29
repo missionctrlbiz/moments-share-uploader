@@ -14,27 +14,21 @@ import {
   Bell,
   Search,
   Download,
-  Eye,
-  Trash2,
   Calendar,
   HardDrive,
   TrendingUp,
-  ChevronDown,
-  ChevronRight,
   Sparkles,
   Sun,
   Moon,
   Wand2,
   Palette,
   Crop,
-  ZoomIn,
   SunMedium,
   Contrast,
   MessageSquare,
   User,
   Phone,
   Mail,
-  Clock,
   Check,
   X,
 } from "lucide-react";
@@ -87,6 +81,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [fetchData]);

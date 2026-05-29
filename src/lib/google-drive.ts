@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { Readable } from "stream";
 
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL || "";
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n") || "";
@@ -60,7 +61,7 @@ export async function uploadFileToDrive(
     },
     media: {
       mimeType: file.type || "application/octet-stream",
-      body: new (require("stream").Readable)({
+      body: new Readable({
         read() {
           this.push(buffer);
           this.push(null);
