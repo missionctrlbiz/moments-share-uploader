@@ -6,17 +6,19 @@ import confetti from "canvas-confetti";
 import {
   Camera,
   Video,
-  Link as LinkIcon,
+  Link,
   FileUp,
+  ArrowRight,
+  ArrowLeft,
   Send,
   User,
   Phone,
   Mail,
   X,
   Upload,
-  CheckCircle2,
+  PartyPopper,
 } from "lucide-react";
-import { cn, SHARE_TYPES, type ShareType, MAX_UPLOAD_SIZE } from "@/lib/utils";
+import { cn, SHARE_TYPES, MAX_UPLOAD_SIZE, type ShareType } from "@/lib/utils";
 import { playSound, initSounds, type SoundName } from "@/lib/sounds";
 
 interface ShareFormData {
@@ -29,10 +31,12 @@ interface ShareFormData {
   message: string;
 }
 
+const STEPS = ["type", "content", "details", "send"] as const;
+
 const typeIcons: Record<ShareType, React.ComponentType<{ className?: string }>> = {
   photo: Camera,
   video: Video,
-  link: LinkIcon,
+  link: Link,
   file: FileUp,
 };
 
@@ -41,6 +45,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
     initSounds();
   }, []);
 
+  const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<ShareFormData>({
     type: null,
     files: [],
@@ -50,7 +55,6 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
     email: "",
     message: "",
   });
-
   const [isDragging, setIsDragging] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
@@ -63,20 +67,21 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
   }, []);
 
   const triggerConfetti = useCallback(() => {
-    const duration = 2500;
+    const duration = 3000;
     const end = Date.now() + duration;
-    const colors = ["#18181b", "#71717a", "#d4d4d8"]; // Monochrome confetti
+
+    const colors = ["#6366f1", "#f472b6", "#10b981", "#f59e0b", "#8b5cf6"];
 
     const frame = () => {
       confetti({
-        particleCount: 4,
+        particleCount: 3,
         angle: 60,
         spread: 55,
         origin: { x: 0, y: 0.7 },
         colors,
       });
       confetti({
-        particleCount: 4,
+        particleCount: 3,
         angle: 120,
         spread: 55,
         origin: { x: 1, y: 0.7 },
@@ -93,7 +98,8 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
   const handleTypeSelect = (type: ShareType) => {
     setErrorMessage(null);
     playSfx("click");
-    setFormData((prev) => ({ ...prev, type, files: [], link: "" }));
+    setFormData((prev) => ({ ...prev, type }));
+    setStep(1);
   };
 
   const handleFileDrop = useCallback(
@@ -136,8 +142,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
     }));
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async () => {
     playSfx("send");
     setIsSending(true);
     setErrorMessage(null);
@@ -208,43 +213,58 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
     }
   };
 
-  const hasContent = formData.type === "link" ? formData.link.trim().length > 0 : formData.files.length > 0;
+  const canProceed = () => {
+    switch (step) {
+      case 0:
+        return formData.type !== null;
+      case 1:
+        return formData.type === "link"
+          ? formData.link.trim() !== ""
+          : formData.files.length > 0;
+      case 2:
+        return true;
+      default:
+        return false;
+    }
+  };
 
   if (isSent) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md mx-auto bg-card text-card-foreground shadow-sm border border-border rounded-xl p-8 flex flex-col items-center justify-center text-center"
+        className="glass-metallic rounded-2xl p-8 flex flex-col items-center justify-center text-center py-12 px-6 card-glow"
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ type: "spring", delay: 0.1 }}
-          className="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-6"
+          transition={{ type: "spring", delay: 0.2 }}
+          className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mb-6 animate-pulse-glow"
         >
-          <CheckCircle2 className="w-8 h-8 text-primary" />
+          <PartyPopper className="w-10 h-10 text-success" />
         </motion.div>
         <motion.h2
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-2xl font-semibold mb-2 tracking-tight"
+          transition={{ delay: 0.4 }}
+          className="text-2xl font-bold mb-2 animated-gradient-text"
+          style={{ fontFamily: "var(--font-jakarta)" }}
         >
-          Received
+          Thanks for sharing!
         </motion.h2>
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="text-muted-foreground text-sm max-w-sm mb-8"
+          transition={{ delay: 0.6 }}
+          className="text-muted max-w-sm"
+          style={{ fontFamily: "var(--font-inter)" }}
         >
-          Your {formData.type} was securely sent to Bibi.
+          Your {formData.type} has been received. Bibi will see it shortly!
         </motion.p>
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.8 }}
           onClick={() => {
             setIsSent(false);
             setFormData({
@@ -256,269 +276,448 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
               email: "",
               message: "",
             });
+            setStep(0);
           }}
-          className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2"
+          className="mt-8 px-6 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors btn-metallic"
+          style={{ fontFamily: "var(--font-jakarta)" }}
         >
-          Send another
+          Share Something Else
         </motion.button>
       </motion.div>
     );
   }
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-8">
+    <div className="w-full max-w-lg mx-auto">
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-2"
+        className="mb-8 text-center"
       >
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+        <h1
+          className="text-3xl sm:text-4xl font-bold mb-3 gradient-text"
+          style={{ fontFamily: "var(--font-jakarta)" }}
+        >
           {welcomeMessage}
         </h1>
-        <p className="text-muted-foreground text-sm">
-          Securely share your files, photos, or links.
+        <p
+          className="text-muted text-sm sm:text-base"
+          style={{ fontFamily: "var(--font-inter)" }}
+        >
+          Share a moment, a memory, or just say hi.
         </p>
       </motion.div>
+
+      <div className="flex items-center justify-center gap-2 mb-8">
+        {STEPS.map((s, i) => (
+          <div key={s} className="flex items-center gap-2">
+            <motion.div
+              animate={{
+                scale: i === step ? 1.2 : 1,
+                backgroundColor:
+                  i <= step ? "var(--primary)" : "var(--border)",
+              }}
+              className="w-2 h-2 rounded-full"
+            />
+          </div>
+        ))}
+      </div>
 
       {errorMessage && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-md border border-destructive/20 bg-destructive/10 text-destructive text-sm flex items-start gap-3"
+          className="glass rounded-xl p-4 mb-6 border border-red-200 dark:border-red-800 bg-red-50/60 dark:bg-red-950/30 backdrop-blur-xl"
         >
-          <X className="w-4 h-4 mt-0.5 shrink-0" />
-          <p className="flex-1 leading-tight">{errorMessage}</p>
-          <button onClick={() => setErrorMessage(null)} className="shrink-0 opacity-70 hover:opacity-100">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <X className="w-3.5 h-3.5 text-red-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-sm font-medium text-red-700 dark:text-red-300"
+                style={{ fontFamily: "var(--font-jakarta)" }}
+              >
+                Upload failed
+              </p>
+              <p
+                className="text-sm text-red-600/80 dark:text-red-400/80 mt-1"
+                style={{ fontFamily: "var(--font-inter)" }}
+              >
+                {errorMessage}
+              </p>
+            </div>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="p-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors flex-shrink-0"
+            >
+              <X className="w-4 h-4 text-red-400" />
+            </button>
+          </div>
         </motion.div>
       )}
 
-      <div className="bg-card text-card-foreground shadow-sm border border-border rounded-xl overflow-hidden">
-        {/* Step 1: Type Selection */}
-        <div className="p-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {SHARE_TYPES.map((type) => {
-              const Icon = typeIcons[type.id];
-              const isSelected = formData.type === type.id;
-              return (
-                <button
-                  key={type.id}
-                  onClick={() => handleTypeSelect(type.id)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-3 p-4 rounded-lg border text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
-                    isSelected
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{type.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Step 2: Content (Auto-expands based on Type) */}
+      <motion.div
+        layout
+        className="glass-metallic rounded-2xl p-6 sm:p-8 shadow-xl card-glow"
+      >
         <AnimatePresence mode="wait">
-          {formData.type && (
+          {step === 0 && (
             <motion.div
-              key="content-area"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-border bg-muted/30"
+              key="type"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
             >
-              <div className="p-6">
-                {formData.type === "link" ? (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Paste your link
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.link}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, link: e.target.value }))
-                      }
-                      placeholder="https://..."
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setIsDragging(true);
-                      }}
-                      onDragLeave={() => setIsDragging(false)}
-                      onDrop={handleFileDrop}
-                      onClick={() => fileInputRef.current?.click()}
+              <h3
+                className="text-lg font-semibold mb-4"
+                style={{ fontFamily: "var(--font-jakarta)" }}
+              >
+                What are you sharing?
+              </h3>
+              <div className="flex flex-col gap-3">
+                {SHARE_TYPES.map((type) => {
+                  const Icon = typeIcons[type.id];
+                  return (
+                    <motion.button
+                      key={type.id}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      onClick={() => handleTypeSelect(type.id)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-8 rounded-lg border-2 border-dashed transition-colors cursor-pointer",
-                        isDragging
+                        "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                        formData.type === type.id
                           ? "border-primary bg-primary/5"
-                          : "border-muted-foreground/25 hover:border-primary/50 hover:bg-accent/50"
+                          : "border-border hover:border-primary/50 hover:bg-surface-hover"
                       )}
                     >
-                      <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
-                      <p className="text-sm font-medium text-foreground">
-                        Click or drag to upload
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Up to {(MAX_UPLOAD_SIZE / (1024 * 1024)).toFixed(0)}MB per file
-                      </p>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      accept={
-                        formData.type === "photo"
-                          ? "image/*"
-                          : formData.type === "video"
-                          ? "video/*"
-                          : "*/*"
-                      }
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-
-                    {formData.files.length > 0 && (
-                      <div className="space-y-2">
-                        {formData.files.map((file, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between p-3 rounded-md bg-background border border-border text-sm"
-                          >
-                            <span className="truncate max-w-[250px] font-medium">
-                              {file.name}
-                            </span>
-                            <button
-                              onClick={() => removeFile(i)}
-                              className="text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-6 h-6 text-primary" />
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div>
+                        <span
+                          className="font-medium text-sm block"
+                          style={{ fontFamily: "var(--font-jakarta)" }}
+                        >
+                          {type.label}
+                        </span>
+                        <span
+                          className="text-xs text-muted"
+                          style={{ fontFamily: "var(--font-inter)" }}
+                        >
+                          {type.description}
+                        </span>
+                      </div>
+                    </motion.button>
+                  );
+                })}
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
 
-        {/* Step 3: Details & Submit (Auto-expands based on Content) */}
-        <AnimatePresence mode="wait">
-          {hasContent && (
+          {step === 1 && formData.type === "link" && (
             <motion.div
-              key="details-area"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-border bg-background"
+              key="link"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
             >
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium leading-none">
-                    From <span className="text-muted-foreground font-normal">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, name: e.target.value }))
-                      }
-                      placeholder="Your name"
-                      className="flex h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              <h3
+                className="text-lg font-semibold mb-4"
+                style={{ fontFamily: "var(--font-jakarta)" }}
+              >
+                Paste your link
+              </h3>
+              <input
+                type="url"
+                value={formData.link}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, link: e.target.value }))
+                }
+                placeholder="https://..."
+                className="w-full px-4 py-3 rounded-xl border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                style={{ fontFamily: "var(--font-inter)" }}
+                autoFocus
+              />
+            </motion.div>
+          )}
+
+          {step === 1 && formData.type !== "link" && (
+            <motion.div
+              key="upload"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <h3
+                className="text-lg font-semibold mb-4"
+                style={{ fontFamily: "var(--font-jakarta)" }}
+              >
+                Drop your {formData.type === "photo" ? "photos" : formData.type === "video" ? "videos" : "files"} here
+              </h3>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleFileDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
+                  isDragging
+                    ? "border-primary bg-primary/5 scale-[1.02]"
+                    : "border-border hover:border-primary/50"
+                )}
+              >
+                <Upload className="w-10 h-10 mx-auto mb-3 text-muted" />
+                <p
+                  className="text-sm text-muted"
+                  style={{ fontFamily: "var(--font-inter)" }}
+                >
+                  Drag & drop or tap to browse
+                </p>
+                <p
+                  className="text-xs text-muted/60 mt-1"
+                  style={{ fontFamily: "var(--font-inter)" }}
+                >
+                  {formData.type === "photo" && "JPG, PNG, WEBP up to 50MB"}
+                  {formData.type === "video" && "MP4, MOV up to 100MB"}
+                  {formData.type === "file" && "Any file up to 100MB"}
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept={
+                  formData.type === "photo"
+                    ? "image/*"
+                    : formData.type === "video"
+                    ? "video/*"
+                    : "*/*"
+                }
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              {formData.files.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {formData.files.map((file, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 rounded-lg bg-surface-hover"
+                    >
+                      <span
+                        className="text-sm truncate max-w-[200px]"
+                        style={{ fontFamily: "var(--font-inter)" }}
+                      >
+                        {file.name}
+                      </span>
+                      <button
+                        onClick={() => removeFile(i)}
+                        className="p-1 rounded-full hover:bg-border transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {step === 2 && (
+            <motion.div
+              key="details"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-4"
+            >
+              <h3
+                className="text-lg font-semibold mb-2"
+                style={{ fontFamily: "var(--font-jakarta)" }}
+              >
+                Who&apos;s sharing? <span className="text-muted text-sm font-normal">(optional)</span>
+              </h3>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Your name"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  style={{ fontFamily: "var(--font-inter)" }}
+                />
+              </div>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, phone: e.target.value }))
+                  }
+                  placeholder="Phone number"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  style={{ fontFamily: "var(--font-inter)" }}
+                />
+              </div>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, email: e.target.value }))
+                  }
+                  placeholder="Email address"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  style={{ fontFamily: "var(--font-inter)" }}
+                />
+              </div>
+              <textarea
+                value={formData.message}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, message: e.target.value }))
+                }
+                placeholder="Add a message for Bibi..."
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all resize-none"
+                style={{ fontFamily: "var(--font-inter)" }}
+              />
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div
+              key="send"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="text-center py-4"
+            >
+              <h3
+                className="text-lg font-semibold mb-4"
+                style={{ fontFamily: "var(--font-jakarta)" }}
+              >
+                Ready to send?
+              </h3>
+              <div className="space-y-2 text-sm text-left mb-6" style={{ fontFamily: "var(--font-inter)" }}>
+                <div className="flex justify-between p-3 rounded-lg bg-surface-hover">
+                  <span className="text-muted">Type</span>
+                  <span className="font-medium capitalize">{formData.type}</span>
+                </div>
+                {formData.type !== "link" && (
+                  <div className="flex justify-between p-3 rounded-lg bg-surface-hover">
+                    <span className="text-muted">Files</span>
+                    <span className="font-medium">{formData.files.length}</span>
+                  </div>
+                )}
+                {formData.type === "link" && (
+                  <div className="flex justify-between p-3 rounded-lg bg-surface-hover">
+                    <span className="text-muted">Link</span>
+                    <span className="font-medium truncate max-w-[200px]">{formData.link}</span>
+                  </div>
+                )}
+                {formData.name && (
+                  <div className="flex justify-between p-3 rounded-lg bg-surface-hover">
+                    <span className="text-muted">From</span>
+                    <span className="font-medium">{formData.name}</span>
+                  </div>
+                )}
+                {formData.message && (
+                  <div className="p-3 rounded-lg bg-surface-hover">
+                    <span className="text-muted block mb-1">Message</span>
+                    <span className="text-sm">{formData.message}</span>
+                  </div>
+                )}
+              </div>
+              {isSending && (
+                <div className="mb-4">
+                  <div className="h-2 rounded-full bg-border overflow-hidden">
+                    <motion.div
+                      className="h-full bg-primary rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${uploadProgress}%` }}
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium leading-none">
-                      Email
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, email: e.target.value }))
-                        }
-                        placeholder="you@example.com"
-                        className="flex h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium leading-none">
-                      Phone
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, phone: e.target.value }))
-                        }
-                        placeholder="+1 (555) 000-0000"
-                        className="flex h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 pt-2">
-                  <label className="text-sm font-medium leading-none">
-                    Message
-                  </label>
-                  <textarea
-                    value={formData.message}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, message: e.target.value }))
-                    }
-                    placeholder="Add a brief note..."
-                    rows={3}
-                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
-                  />
-                </div>
-
-                <div className="pt-4">
-                  <button
-                    type="submit"
-                    disabled={isSending}
-                    className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                  <p
+                    className="text-xs text-muted mt-2"
+                    style={{ fontFamily: "var(--font-inter)" }}
                   >
-                    {isSending ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        <span>Uploading... {uploadProgress}%</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Send className="w-4 h-4" />
-                        <span>Submit</span>
-                      </div>
-                    )}
-                  </button>
+                    Uploading... {uploadProgress}%
+                  </p>
                 </div>
-              </form>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+
+        <div className="flex justify-between mt-6 pt-4 border-t border-border/50">
+          {step > 0 ? (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setErrorMessage(null);
+                playSfx("click");
+                setStep(step - 1);
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-muted hover:text-foreground transition-colors"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </motion.button>
+          ) : (
+            <div />
+          )}
+
+          {step < 3 ? (
+            <motion.button
+              whileHover={{ scale: canProceed() ? 1.02 : 1 }}
+              whileTap={{ scale: canProceed() ? 0.98 : 1 }}
+              onClick={() => canProceed() && (setErrorMessage(null), setStep(step + 1))}
+              disabled={!canProceed()}
+              className={cn(
+                "flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all",
+                canProceed()
+                  ? "bg-primary text-white hover:bg-primary-dark"
+                  : "bg-border text-muted cursor-not-allowed"
+              )}
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              Next
+              <ArrowRight className="w-4 h-4" />
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSubmit}
+              disabled={isSending}
+              className="flex items-center gap-2 px-6 py-2 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              {isSending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Send to Bibi
+                </>
+              )}
+            </motion.button>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

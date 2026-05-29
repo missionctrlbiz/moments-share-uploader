@@ -4,41 +4,39 @@ import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-function generateParticles(count: number, isDark: boolean) {
+function generateParticles(count: number) {
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   const sizes = new Float32Array(count);
 
-  const baseLightness = isDark ? 0.3 : 0.8;
-
   for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 20;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+    positions[i * 3] = (Math.random() - 0.5) * 24;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 24;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 12;
 
     const color = new THREE.Color();
-    // Monochrome/Slate elegant colors
-    color.setHSL(0, 0, baseLightness + (Math.random() * 0.2 - 0.1));
+    const hue = 0.55 + Math.random() * 0.35;
+    color.setHSL(hue, 0.8, 0.55 + Math.random() * 0.3);
     colors[i * 3] = color.r;
     colors[i * 3 + 1] = color.g;
     colors[i * 3 + 2] = color.b;
 
-    sizes[i] = Math.random() * 2 + 0.5;
+    sizes[i] = Math.random() * 4 + 1.5;
   }
 
   return { positions, colors, sizes };
 }
 
-function FloatingParticles({ count = 100 }: { count?: number }) {
+function FloatingParticles({ count = 120 }: { count?: number }) {
   const mesh = useRef<THREE.Points>(null);
-  
-  // We'll use a neutral lightness since CSS mix-blend-mode handles the rest
-  const particles = useMemo(() => generateParticles(count, false), [count]);
+
+  const particles = useMemo(() => generateParticles(count), [count]);
 
   useFrame((state) => {
     if (mesh.current) {
-      mesh.current.rotation.y = state.clock.getElapsedTime() * 0.015;
-      mesh.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.01) * 0.05;
+      mesh.current.rotation.y = state.clock.getElapsedTime() * 0.04;
+      mesh.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.015) * 0.15;
+      mesh.current.rotation.z = Math.cos(state.clock.getElapsedTime() * 0.01) * 0.08;
     }
   });
 
@@ -55,56 +53,151 @@ function FloatingParticles({ count = 100 }: { count?: number }) {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.06}
+        size={0.1}
         vertexColors
         transparent
-        opacity={0.4}
+        opacity={0.75}
         sizeAttenuation
-        blending={THREE.NormalBlending}
+        blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
     </points>
   );
 }
 
-function AbstractWireframes() {
+function FloatingOrbs() {
   const group = useRef<THREE.Group>(null);
+  const orbCount = 8;
 
   useFrame((state) => {
     if (group.current) {
-      group.current.rotation.y = state.clock.getElapsedTime() * 0.02;
-      group.current.rotation.z = state.clock.getElapsedTime() * 0.01;
+      group.current.children.forEach((child, i) => {
+        const mesh = child as THREE.Mesh;
+        const t = state.clock.getElapsedTime() + i * 0.7;
+        mesh.position.y += Math.sin(t) * 0.003;
+        mesh.position.x += Math.cos(t * 0.7) * 0.002;
+        mesh.rotation.x += 0.003;
+        mesh.rotation.y += 0.004;
+        mesh.rotation.z += 0.002;
+      });
     }
   });
 
   return (
     <group ref={group}>
-      <mesh position={[2, 1, -4]} rotation={[0.5, 0.5, 0]}>
-        <icosahedronGeometry args={[1.5, 1]} />
-        <meshBasicMaterial color="#a1a1aa" wireframe transparent opacity={0.15} />
-      </mesh>
-      <mesh position={[-3, -2, -5]} rotation={[-0.5, 0.2, 0.1]}>
-        <octahedronGeometry args={[2, 0]} />
-        <meshBasicMaterial color="#a1a1aa" wireframe transparent opacity={0.1} />
-      </mesh>
+      {Array.from({ length: orbCount }, (_, i) => {
+        const radius = 0.35 + i * 0.15;
+        const x = (i - 3.5) * 3.5;
+        const y = Math.sin(i * 1.2) * 3;
+        const z = -4 - Math.cos(i) * 2;
+        const hue = 0.55 + i * 0.06;
+        return (
+          <mesh key={i} position={[x, y, z]}>
+            <sphereGeometry args={[radius, 48, 48]} />
+            <meshStandardMaterial
+              color={new THREE.Color().setHSL(hue, 0.6, 0.55)}
+              transparent
+              opacity={0.25}
+              roughness={0.05}
+              metalness={0.9}
+              envMapIntensity={0.3}
+            />
+          </mesh>
+        );
+      })}
     </group>
+  );
+}
+
+function FloatingRing() {
+  const ring = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (ring.current) {
+      ring.current.rotation.x = state.clock.getElapsedTime() * 0.15;
+      ring.current.rotation.y = state.clock.getElapsedTime() * 0.1;
+      ring.current.rotation.z = state.clock.getElapsedTime() * 0.05;
+      ring.current.position.y = Math.sin(state.clock.getElapsedTime() * 0.3) * 1.5;
+    }
+  });
+
+  return (
+    <mesh ref={ring} position={[3, 1, -5]} rotation={[0.5, 0.2, 0]}>
+      <torusGeometry args={[2.5, 0.04, 32, 120]} />
+      <meshStandardMaterial
+        color="#818cf8"
+        transparent
+        opacity={0.5}
+        roughness={0.1}
+        metalness={0.95}
+        emissive="#6366f1"
+        emissiveIntensity={0.3}
+      />
+    </mesh>
+  );
+}
+
+function FloatingRingTwo() {
+  const ring = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (ring.current) {
+      ring.current.rotation.x = state.clock.getElapsedTime() * -0.12;
+      ring.current.rotation.y = state.clock.getElapsedTime() * -0.08;
+      ring.current.rotation.z = state.clock.getElapsedTime() * 0.06;
+      ring.current.position.y = Math.cos(state.clock.getElapsedTime() * 0.25) * 1.8;
+    }
+  });
+
+  return (
+    <mesh ref={ring} position={[-3.5, -1, -4.5]} rotation={[1, -0.3, 0.5]}>
+      <torusGeometry args={[3, 0.03, 24, 100]} />
+      <meshStandardMaterial
+        color="#f472b6"
+        transparent
+        opacity={0.4}
+        roughness={0.1}
+        metalness={0.9}
+        emissive="#c084fc"
+        emissiveIntensity={0.25}
+      />
+    </mesh>
   );
 }
 
 export default function ThreeBackground() {
   return (
-    <div className="fixed inset-0 -z-10 bg-background transition-colors duration-700">
+    <div
+      className="fixed inset-0 -z-10"
+      style={{ background: "var(--background)" }}
+    >
       <Canvas
         camera={{ position: [0, 0, 8], fov: 60 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping }}
         style={{ background: "transparent" }}
       >
-        <ambientLight intensity={0.5} />
-        <FloatingParticles count={150} />
-        <AbstractWireframes />
+        <ambientLight intensity={0.4} />
+        <pointLight position={[10, 8, 8]} intensity={0.8} color="#818cf8" />
+        <pointLight position={[-10, -6, -4]} intensity={0.6} color="#f472b6" />
+        <pointLight position={[0, 6, -6]} intensity={0.5} color="#6366f1" />
+        <pointLight position={[5, -8, -3]} intensity={0.4} color="#c084fc" />
+
+        <FloatingParticles count={120} />
+        <FloatingOrbs />
+        <FloatingRing />
+        <FloatingRingTwo />
       </Canvas>
-      {/* Subtle vignette/gradient to focus attention to the center */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--background)_100%)] opacity-80" />
+
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(244, 114, 182, 0.05) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 60%)
+          `,
+        }}
+      />
     </div>
   );
 }
