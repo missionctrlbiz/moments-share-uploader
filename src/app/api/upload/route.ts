@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const { sendUploadNotification } = await import("@/lib/notifications");
-      await sendUploadNotification({
+      const { sendUploadNotification, sendThankYou } = await import("@/lib/notifications");
+      const notificationData = {
         type,
         senderName: name,
         senderPhone: phone,
@@ -80,7 +80,11 @@ export async function POST(request: NextRequest) {
         fileCount: uploadedFiles.length,
         fileNames: uploadedFiles.map((f) => f.name),
         timestamp: new Date().toISOString(),
-      });
+      };
+      await sendUploadNotification(notificationData);
+      if (email) {
+        await sendThankYou(notificationData);
+      }
     } catch (notifyError) {
       console.error("Notification error:", notifyError);
     }
