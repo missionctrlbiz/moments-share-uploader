@@ -5,6 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export const MAX_UPLOAD_SIZE = 4 * 1024 * 1024; // 4MB — Vercel Hobby plan serverless limit
+
 export const WELCOME_MESSAGES = [
   "Hello, I'm Bibi. Nice to meet you.",
   "Hey there! Welcome to my little corner of the internet.",

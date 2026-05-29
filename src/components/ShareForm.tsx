@@ -18,7 +18,7 @@ import {
   Upload,
   PartyPopper,
 } from "lucide-react";
-import { cn, SHARE_TYPES, type ShareType } from "@/lib/utils";
+import { cn, SHARE_TYPES, MAX_UPLOAD_SIZE, type ShareType } from "@/lib/utils";
 import { playSound, initSounds, type SoundName } from "@/lib/sounds";
 
 interface ShareFormData {
@@ -104,6 +104,14 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
       e.preventDefault();
       setIsDragging(false);
       const files = Array.from(e.dataTransfer.files);
+      const oversized = files.filter((f) => f.size > MAX_UPLOAD_SIZE);
+      if (oversized.length > 0) {
+        setErrorMessage(
+          `${oversized.map((f) => f.name).join(", ")} exceed${oversized.length === 1 ? "s" : ""} the ${(MAX_UPLOAD_SIZE / (1024 * 1024)).toFixed(0)}MB limit per file.`
+        );
+        return;
+      }
+      setErrorMessage(null);
       setFormData((prev) => ({ ...prev, files: [...prev.files, ...files] }));
       playSfx("click");
     },
@@ -112,6 +120,14 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    const oversized = files.filter((f) => f.size > MAX_UPLOAD_SIZE);
+    if (oversized.length > 0) {
+      setErrorMessage(
+        `${oversized.map((f) => f.name).join(", ")} exceed${oversized.length === 1 ? "s" : ""} the ${(MAX_UPLOAD_SIZE / (1024 * 1024)).toFixed(0)}MB limit per file.`
+      );
+      return;
+    }
+    setErrorMessage(null);
     setFormData((prev) => ({ ...prev, files: [...prev.files, ...files] }));
     playSfx("click");
   };
@@ -127,6 +143,15 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
     playSfx("send");
     setIsSending(true);
     setErrorMessage(null);
+
+    const totalSize = formData.files.reduce((acc, f) => acc + f.size, 0);
+    if (totalSize > MAX_UPLOAD_SIZE) {
+      setIsSending(false);
+      setErrorMessage(
+        `Total file size (${(totalSize / (1024 * 1024)).toFixed(1)}MB) exceeds the ${(MAX_UPLOAD_SIZE / (1024 * 1024)).toFixed(0)}MB limit. Please select smaller files.`
+      );
+      return;
+    }
 
     try {
       const submitData = new FormData();
