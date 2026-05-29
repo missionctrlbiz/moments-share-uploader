@@ -145,26 +145,6 @@ const soundGenerators: Record<SoundName, () => void> = {
 
 const soundCache: Record<string, Howl> = {};
 
-function createHowlFromGenerator(name: SoundName): Howl {
-  const ctx = ensureCtx();
-  if (!ctx) {
-    return new Howl({ src: [""] });
-  }
-
-  const sampleRate = ctx.sampleRate;
-  const duration = name === "confetti" ? 0.8 : name === "success" ? 0.6 : 0.4;
-  const bufferLength = Math.ceil(sampleRate * duration);
-  const offlineCtx = new OfflineAudioContext(1, bufferLength, sampleRate);
-
-  const tempCtx = audioCtx;
-  const sounds = getOfflineSoundData(name, offlineCtx, sampleRate, duration);
-
-  return new Howl({
-    src: [sounds],
-    format: ["wav"],
-  });
-}
-
 function getOfflineSoundData(
   name: SoundName,
   offlineCtx: OfflineAudioContext,

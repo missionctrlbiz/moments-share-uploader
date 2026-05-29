@@ -29,7 +29,6 @@ function generateParticles(count: number) {
 function FloatingParticles({ count = 50 }: { count?: number }) {
   const mesh = useRef<THREE.Points>(null);
 
-  // eslint-disable-next-line react-hooks/purity
   const particles = useMemo(() => generateParticles(count), [count]);
 
   useFrame((state) => {

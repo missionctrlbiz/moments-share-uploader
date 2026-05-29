@@ -16,7 +16,6 @@ import {
   Mail,
   X,
   Upload,
-  Check,
   PartyPopper,
 } from "lucide-react";
 import { cn, SHARE_TYPES, type ShareType } from "@/lib/utils";
