@@ -13,15 +13,17 @@ export default function Home() {
   const [welcomeMessage] = useState(() => getWelcomeMessage());
 
   return (
-    <main className="min-h-screen relative flex flex-col items-center justify-center px-4 py-8">
+    <main className="min-h-screen relative flex flex-col items-center justify-start scrollable">
       <ThreeBackground />
-      {welcomeMessage && <ShareForm welcomeMessage={welcomeMessage} />}
+      <div className="flex-1 flex flex-col items-center justify-center w-full py-8 px-4">
+        {welcomeMessage && <ShareForm welcomeMessage={welcomeMessage} />}
+      </div>
       <footer
-        className="mt-auto pt-8 pb-4 text-center text-xs text-muted"
+        className="pb-6 text-center text-xs text-muted shrink-0"
         style={{ fontFamily: "var(--font-inter)" }}
       >
         Made with love by{" "}
-        <span className="gradient-text font-semibold">Bibi</span>
+        <span className="animated-gradient-text font-semibold">Bibi</span>
       </footer>
     </main>
   );

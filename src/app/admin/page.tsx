@@ -105,11 +105,11 @@ export default function AdminPage() {
   };
 
   return (
-    <div className={cn("min-h-screen", isDark ? "dark" : "")}>
-      <div className="min-h-screen bg-background">
-        <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-surface/80 backdrop-blur-xl z-40 hidden lg:flex flex-col">
+    <div className={cn("min-h-screen scrollable", isDark ? "dark" : "")}>
+      <div className="min-h-screen bg-background scrollable">
+        <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-surface/80 backdrop-blur-xl z-40 hidden lg:flex flex-col overflow-y-auto">
           <div className="p-6 border-b border-border">
-            <h1 className="text-xl font-bold gradient-text" style={{ fontFamily: "var(--font-jakarta)" }}>
+            <h1 className="text-xl font-bold animated-gradient-text" style={{ fontFamily: "var(--font-jakarta)" }}>
               Moments Admin
             </h1>
             <p className="text-xs text-muted mt-1" style={{ fontFamily: "var(--font-inter)" }}>
@@ -189,10 +189,10 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <main className="lg:ml-64 p-6">
+        <main className="lg:ml-64 p-6 scrollable">
           {activeTab === "dashboard" && stats && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex flex-col gap-4">
                 {[
                   { label: "Total Uploads", value: stats.totalUploads, icon: HardDrive, color: "primary" },
                   { label: "Photos", value: stats.uploadsByType.photo || 0, icon: Image, color: "success" },
@@ -203,7 +203,7 @@ export default function AdminPage() {
                     key={stat.label}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="glass rounded-2xl p-5"
+                    className="glass-metallic rounded-2xl p-5 card-glow"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <stat.icon className="w-5 h-5 text-muted" />
@@ -219,7 +219,7 @@ export default function AdminPage() {
                 ))}
               </div>
 
-              <div className="glass rounded-2xl p-6">
+              <div className="glass-metallic rounded-2xl p-6 card-glow">
                 <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: "var(--font-jakarta)" }}>
                   Recent Uploads
                 </h3>
@@ -254,7 +254,7 @@ export default function AdminPage() {
               </div>
 
               {Object.keys(stats.uploadsByDay).length > 0 && (
-                <div className="glass rounded-2xl p-6">
+                <div className="glass-metallic rounded-2xl p-6 card-glow">
                   <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: "var(--font-jakarta)" }}>
                     Uploads Over Time
                   </h3>
@@ -303,7 +303,7 @@ export default function AdminPage() {
                       animate={{ opacity: 1, y: 0 }}
                       onClick={() => setSelectedUpload(upload)}
                       className={cn(
-                        "glass rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-all",
+                        "glass-metallic rounded-2xl p-5 cursor-pointer card-glow",
                         !upload.viewed && "border-l-4 border-accent"
                       )}
                     >
@@ -357,7 +357,7 @@ export default function AdminPage() {
 
           {activeTab === "settings" && (
             <div className="max-w-2xl space-y-6">
-              <div className="glass rounded-2xl p-6">
+              <div className="glass-metallic rounded-2xl p-6 card-glow">
                 <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: "var(--font-jakarta)" }}>
                   Notification Settings
                 </h3>
@@ -383,7 +383,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="glass rounded-2xl p-6">
+              <div className="glass-metallic rounded-2xl p-6 card-glow">
                 <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: "var(--font-jakarta)" }}>
                   Connections
                 </h3>
@@ -421,7 +421,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="glass rounded-2xl p-6">
+              <div className="glass-metallic rounded-2xl p-6 card-glow">
                 <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: "var(--font-jakarta)" }}>
                   Share Link
                 </h3>
@@ -437,7 +437,7 @@ export default function AdminPage() {
                     onClick={() => {
                       navigator.clipboard.writeText(window.location.origin);
                     }}
-                    className="px-4 py-3 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors"
+                    className="px-4 py-3 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors btn-metallic"
                     style={{ fontFamily: "var(--font-jakarta)" }}
                   >
                     Copy
@@ -449,13 +449,13 @@ export default function AdminPage() {
         </main>
 
         {selectedUpload && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm scrollable">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="bg-surface rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
-              <div className="p-6 border-b border-border flex items-center justify-between">
+              <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-surface z-10">
                 <h3 className="text-lg font-semibold" style={{ fontFamily: "var(--font-jakarta)" }}>
                   Upload Details
                 </h3>
@@ -467,7 +467,7 @@ export default function AdminPage() {
                 </button>
               </div>
               <div className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-4">
                   <div className="p-4 rounded-xl bg-surface-hover">
                     <div className="flex items-center gap-2 mb-2">
                       <User className="w-4 h-4 text-muted" />
@@ -540,22 +540,25 @@ export default function AdminPage() {
                   <p className="text-xs text-muted mb-3 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter)" }}>
                     Quick Enhance
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col gap-2">
                     {GEMINI_TOGGLES.map((toggle) => (
                       <button
                         key={toggle.id}
                         onClick={() => toggleGemini(toggle.id)}
                         className={cn(
-                          "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-center",
+                          "flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left",
                           geminiToggles[toggle.id]
                             ? "border-primary bg-primary/5"
                             : "border-border hover:border-primary/30"
                         )}
                       >
-                        <toggle.icon className={cn("w-5 h-5", geminiToggles[toggle.id] ? "text-primary" : "text-muted")} />
-                        <span className="text-xs font-medium" style={{ fontFamily: "var(--font-jakarta)" }}>
-                          {toggle.label}
-                        </span>
+                        <toggle.icon className={cn("w-5 h-5 flex-shrink-0", geminiToggles[toggle.id] ? "text-primary" : "text-muted")} />
+                        <div>
+                          <span className="text-sm font-medium" style={{ fontFamily: "var(--font-jakarta)" }}>
+                            {toggle.label}
+                          </span>
+                          <p className="text-xs text-muted">{toggle.description}</p>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -565,7 +568,7 @@ export default function AdminPage() {
                   <p className="text-xs text-muted mb-3 uppercase tracking-wider" style={{ fontFamily: "var(--font-inter)" }}>
                     Prompt Presets
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-2">
                     {PROMPT_PRESETS.map((preset) => (
                       <button
                         key={preset.id}
@@ -580,6 +583,7 @@ export default function AdminPage() {
                         <p className="text-sm font-medium" style={{ fontFamily: "var(--font-jakarta)" }}>
                           {preset.label}
                         </p>
+                        <p className="text-xs text-muted mt-0.5">{preset.prompt}</p>
                       </button>
                     ))}
                   </div>

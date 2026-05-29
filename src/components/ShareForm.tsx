@@ -182,13 +182,13 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center text-center py-12 px-6"
+        className="glass-metallic rounded-2xl p-8 flex flex-col items-center justify-center text-center py-12 px-6 card-glow"
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", delay: 0.2 }}
-          className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mb-6"
+          className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mb-6 animate-pulse-glow"
         >
           <PartyPopper className="w-10 h-10 text-success" />
         </motion.div>
@@ -196,10 +196,10 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="text-2xl font-bold mb-2"
+          className="text-2xl font-bold mb-2 animated-gradient-text"
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
-          Thanks for sharing! 🎉
+          Thanks for sharing!
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -227,7 +227,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
             });
             setStep(0);
           }}
-          className="mt-8 px-6 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors"
+          className="mt-8 px-6 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors btn-metallic"
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
           Share Something Else
@@ -274,7 +274,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
 
       <motion.div
         layout
-        className="glass rounded-2xl p-6 sm:p-8 shadow-xl"
+        className="glass-metallic rounded-2xl p-6 sm:p-8 shadow-xl card-glow"
       >
         <AnimatePresence mode="wait">
           {step === 0 && (
@@ -290,35 +290,39 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
               >
                 What are you sharing?
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 {SHARE_TYPES.map((type) => {
                   const Icon = typeIcons[type.id];
                   return (
                     <motion.button
                       key={type.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
                       onClick={() => handleTypeSelect(type.id)}
                       className={cn(
-                        "flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all",
+                        "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
                         formData.type === type.id
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-primary/50 hover:bg-surface-hover"
                       )}
                     >
-                      <Icon className="w-8 h-8 text-primary" />
-                      <span
-                        className="font-medium text-sm"
-                        style={{ fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {type.label}
-                      </span>
-                      <span
-                        className="text-xs text-muted"
-                        style={{ fontFamily: "var(--font-inter)" }}
-                      >
-                        {type.description}
-                      </span>
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <span
+                          className="font-medium text-sm block"
+                          style={{ fontFamily: "var(--font-jakarta)" }}
+                        >
+                          {type.label}
+                        </span>
+                        <span
+                          className="text-xs text-muted"
+                          style={{ fontFamily: "var(--font-inter)" }}
+                        >
+                          {type.description}
+                        </span>
+                      </div>
                     </motion.button>
                   );
                 })}
