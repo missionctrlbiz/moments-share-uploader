@@ -932,16 +932,18 @@ export default function AdminPage() {
                           className="flex items-center justify-between p-2.5 rounded-lg bg-background group"
                         >
                           <span className="text-sm truncate" style={{ fontFamily: "var(--font-inter)" }}>
-                            {name}
+                            {name} {(!selectedUpload.fileWebViewLinks || !selectedUpload.fileWebViewLinks[i]) && <span className="text-xs text-red-500 italic ml-2">(Failed to upload to Drive)</span>}
                           </span>
-                          <a
-                            href={selectedUpload.fileWebViewLinks[i]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors opacity-50 group-hover:opacity-100"
-                          >
-                            <Download className="w-4 h-4 text-primary" />
-                          </a>
+                          {selectedUpload.fileWebViewLinks && selectedUpload.fileWebViewLinks[i] && (
+                            <a
+                              href={selectedUpload.fileWebViewLinks[i]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors opacity-50 group-hover:opacity-100"
+                            >
+                              <Download className="w-4 h-4 text-primary" />
+                            </a>
+                          )}
                         </div>
                       ))}
                     </div>

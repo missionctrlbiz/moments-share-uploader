@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { createFolderIfNotExists, uploadFileToDrive } from "@/lib/google-drive";
 import { saveUpload } from "@/lib/kv";
 import type { UploadMetadata } from "@/lib/db-schema";
 
 export const runtime = "nodejs";
-export const maxBodySize = "10mb";
+export const maxBodySize = "4mb"; // Explicitly match the client-side limit for Vercel Hobby
 
 export async function POST(request: NextRequest) {
+  let uploadId = "";
+  let driveError: string | null = null;
+
   try {
     const formData = await request.formData();
     const type = formData.get("type") as string;
-    const senderName = (formData.get("name") as string) || "Anonymous";
-    const senderPhone = (formData.get("phone") as string) || "";
-    const senderEmail = (formData.get("email") as string) || "";
+    const name = (formData.get("name") as string) || "Anonymous";
+    const phone = (formData.get("phone") as string) || "";
+    const email = (formData.get("email") as string) || "";
     const message = (formData.get("message") as string) || "";
     const link = (formData.get("link") as string) || "";
     const files = (formData.getAll("files") as File[]).filter((f) => f.size > 0);
@@ -24,85 +27,110 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadId = `upl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    uploadId = `upl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const totalSize = files.reduce((acc, f) => acc + f.size, 0);
 
-    const uploadedFiles: { name: string; url: string; downloadUrl: string; size: number }[] = [];
+    const today = new Date();
+    const dateFolder = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const typeFolder = (type || "file").toLowerCase();
 
-    for (const file of files) {
-      const blob = await put(file.name, file, { access: "public" });
-      uploadedFiles.push({
-        name: file.name,
-        url: blob.url,
-        downloadUrl: blob.downloadUrl,
-        size: file.size,
-      });
+    const uploadedFiles: { id: string; name: string; webViewLink: string }[] = [];
+
+    // 1. Try Google Drive Upload First
+    try {
+      const parentFolder = await createFolderIfNotExists(dateFolder);
+      const uploadFolder = await createFolderIfNotExists(typeFolder, parentFolder);
+
+      for (const file of files) {
+        const result = await uploadFileToDrive(file, uploadFolder);
+        uploadedFiles.push(result);
+      }
+
+      if (link && type === "link") {
+        const linkText = new Blob([link], { type: "text/plain" });
+        const linkFile = new File([linkText], `link-${Date.now()}.txt`, {
+          type: "text/plain",
+        });
+        const result = await uploadFileToDrive(linkFile, uploadFolder);
+        uploadedFiles.push(result);
+      }
+    } catch (err) {
+      driveError = err instanceof Error ? err.message : "Google Drive upload failed";
+      console.error("[Drive Error] Upload failed, but proceeding to save metadata:", driveError);
     }
 
-    if (link && type === "link") {
-      uploadedFiles.push({
-        name: `link-${Date.now()}.txt`,
-        url: link,
-        downloadUrl: link,
-        size: 0,
-      });
-    }
+    // 2. ALWAYS Save to KV (The Database Fallback/Record)
+    const fileNames = uploadedFiles.length > 0
+      ? uploadedFiles.map((f) => f.name)
+      : files.map((f) => f.name); // If Drive failed, at least record the intended file names
+    
+    const fileIds = uploadedFiles.map((f) => f.id);
+    const fileWebViewLinks = uploadedFiles.map((f) => f.webViewLink);
 
     const metadata: UploadMetadata = {
       id: uploadId,
       type: (type as UploadMetadata["type"]) || "file",
-      senderName,
-      senderPhone,
-      senderEmail,
+      senderName: name,
+      senderPhone: phone,
+      senderEmail: email,
       message,
-      fileNames: uploadedFiles.map((f) => f.name),
-      fileIds: uploadedFiles.map((f) => f.url),
-      fileWebViewLinks: uploadedFiles.map((f) => f.downloadUrl),
-      folderId: "vercel-blob",
-      folderPath: `blob/${type}`,
+      fileNames,
+      fileIds,
+      fileWebViewLinks,
+      folderId: uploadedFiles.length > 0 ? `${dateFolder}/${typeFolder}` : "",
+      folderPath: uploadedFiles.length > 0 ? `${dateFolder}/${typeFolder}` : "",
       totalSize,
       createdAt: new Date().toISOString(),
       viewed: false,
     };
 
+    let kvSaved = false;
     try {
       await saveUpload(metadata);
+      kvSaved = true;
     } catch (kvError) {
-      console.error("KV save error:", kvError);
+      console.error("[KV Error] Failed to save metadata:", kvError);
     }
 
+    // 3. Send Notifications
     try {
-      const { sendUploadNotification, sendThankYou } = await import(
-        "@/lib/notifications"
-      );
+      const { sendUploadNotification, sendThankYou } = await import("@/lib/notifications");
       const notificationData = {
         type,
-        senderName,
-        senderPhone,
-        senderEmail,
+        senderName: name,
+        senderPhone: phone,
+        senderEmail: email,
         message,
-        fileCount: uploadedFiles.length,
-        fileNames: uploadedFiles.map((f) => f.name),
+        fileCount: uploadedFiles.length || files.length,
+        fileNames,
         timestamp: new Date().toISOString(),
       };
       await sendUploadNotification(notificationData);
-      if (senderEmail) {
+      if (email) {
         await sendThankYou(notificationData);
       }
     } catch (notifyError) {
-      console.error("Notification error:", notifyError);
+      console.error("[Notification Error] Failed to send emails:", notifyError);
     }
+
+    // 4. Return appropriate response
+    const responseMessage = driveError
+      ? kvSaved
+        ? "Your submission was recorded successfully, but file upload to Drive is pending. Bibi will check manually."
+        : "Your submission was received but storage is temporarily unavailable. Please try again later."
+      : "Files uploaded successfully";
 
     return NextResponse.json({
       success: true,
       uploadId,
       files: uploadedFiles,
-      message: "Files uploaded successfully",
+      driveError: driveError || null,
+      kvSaved,
+      message: responseMessage,
     });
   } catch (error) {
-    console.error("Upload error:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to process upload";
+    console.error("[Fatal Error] Upload route crashed:", error);
+    const message = error instanceof Error ? error.message : "Failed to process upload";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
