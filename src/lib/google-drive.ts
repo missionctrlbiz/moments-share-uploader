@@ -16,7 +16,13 @@ function getAuth() {
 }
 
 function getDrive() {
-  return google.drive({ version: "v3", auth: getAuth() });
+  return google.drive({
+    version: "v3",
+    auth: getAuth(),
+    params: {
+      supportsAllDrives: true,
+    },
+  });
 }
 
 export async function createFolderIfNotExists(
@@ -54,38 +60,55 @@ export async function uploadFileToDrive(
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const response = await drive.files.create({
-    requestBody: {
-      name: file.name,
-      parents: [folderId],
-    },
-    media: {
-      mimeType: file.type || "application/octet-stream",
-      body: new Readable({
-        read() {
-          this.push(buffer);
-          this.push(null);
-        },
-      }),
-    },
-    fields: "id, name, webViewLink",
-  });
+  try {
+    const response = await drive.files.create({
+      requestBody: {
+        name: file.name,
+        parents: [folderId],
+      },
+      media: {
+        mimeType: file.type || "application/octet-stream",
+        body: new Readable({
+          read() {
+            this.push(buffer);
+            this.push(null);
+          },
+        }),
+      },
+      fields: "id, name, webViewLink",
+      supportsAllDrives: true,
+    });
 
-  await drive.permissions.create({
-    fileId: response.data.id!,
-    requestBody: {
-      role: "reader",
-      type: "anyone",
-    },
-  });
+    await drive.permissions.create({
+      fileId: response.data.id!,
+      requestBody: {
+        role: "reader",
+        type: "anyone",
+      },
+      supportsAllDrives: true,
+    });
 
-  const webViewLink = `https://drive.google.com/file/d/${response.data.id}/view`;
+    const webViewLink = `https://drive.google.com/file/d/${response.data.id}/view`;
 
-  return {
-    id: response.data.id!,
-    name: response.data.name!,
-    webViewLink,
-  };
+    return {
+      id: response.data.id!,
+      name: response.data.name!,
+      webViewLink,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (message.includes("storage quota") || message.includes("storageQuota")) {
+      throw new Error(
+        "Google Drive setup incomplete: share the Moments folder with the service account. " +
+          "Go to your Drive → right-click the Moments folder → Share → add " +
+          GOOGLE_CLIENT_EMAIL +
+          " as Editor."
+      );
+    }
+
+    throw error;
+  }
 }
 
 export async function getFilesFromFolder(folderId: string) {
