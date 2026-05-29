@@ -7,18 +7,44 @@ const STATS_CACHE = "stats:cache";
 
 function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+    console.warn("[KV] Not configured — KV_REST_API_URL or KV_REST_API_TOKEN missing");
     return null;
   }
   try {
     return createKv;
-  } catch {
+  } catch (err) {
+    console.error("[KV] Failed to initialize:", err);
     return null;
+  }
+}
+
+export async function checkKvConnection(): Promise<{ connected: boolean; error?: string; info?: string }> {
+  if (!process.env.KV_REST_API_URL) {
+    return { connected: false, error: "KV_REST_API_URL not set" };
+  }
+  if (!process.env.KV_REST_API_TOKEN) {
+    return { connected: false, error: "KV_REST_API_TOKEN not set" };
+  }
+  try {
+    const kv = getKv();
+    if (!kv) return { connected: false, error: "KV client initialization failed" };
+    await kv.ping();
+    const count = await kv.llen(UPLOAD_LIST);
+    return { connected: true, info: `Connected. ${count} uploads stored.` };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { connected: false, error: message };
   }
 }
 
 export async function saveUpload(metadata: UploadMetadata): Promise<void> {
   const kv = getKv();
-  if (!kv) return;
+  if (!kv) {
+    console.warn(
+      `[KV] saveUpload skipped — KV not configured. Upload ${metadata.id} NOT persisted.`
+    );
+    return;
+  }
 
   const pipeline = kv.pipeline();
   pipeline.hset(`${UPLOAD_PREFIX}${metadata.id}`, {
@@ -39,6 +65,7 @@ export async function saveUpload(metadata: UploadMetadata): Promise<void> {
   });
   pipeline.lpush(UPLOAD_LIST, metadata.id);
   await pipeline.exec();
+  console.log(`[KV] Saved upload ${metadata.id}`);
 }
 
 export async function getUpload(id: string): Promise<UploadMetadata | null> {
