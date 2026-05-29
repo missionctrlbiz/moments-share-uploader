@@ -56,6 +56,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const playSfx = useCallback((name: SoundName) => {
@@ -92,6 +93,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
   }, []);
 
   const handleTypeSelect = (type: ShareType) => {
+    setErrorMessage(null);
     playSfx("click");
     setFormData((prev) => ({ ...prev, type }));
     setStep(1);
@@ -124,6 +126,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
   const handleSubmit = async () => {
     playSfx("send");
     setIsSending(true);
+    setErrorMessage(null);
 
     try {
       const submitData = new FormData();
@@ -144,10 +147,26 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
 
       await new Promise<void>((resolve, reject) => {
         xhr.onload = () => {
-          if (xhr.status === 200) resolve();
-          else reject(new Error("Upload failed"));
+          if (xhr.status === 200) {
+            resolve();
+            return;
+          }
+          try {
+            const body = JSON.parse(xhr.responseText);
+            reject(new Error(body.error || `Server error (${xhr.status})`));
+          } catch {
+            reject(new Error(`Server error (${xhr.status}). Please try again.`));
+          }
         };
-        xhr.onerror = () => reject(new Error("Upload failed"));
+        xhr.onerror = () => {
+          if (xhr.status === 0) {
+            reject(new Error("Could not reach the server. Please check your connection."));
+          } else {
+            reject(new Error("Network error. Please check your connection and try again."));
+          }
+        };
+        xhr.ontimeout = () => reject(new Error("Request timed out. Files may be too large or the network is slow."));
+        xhr.timeout = 120000;
         xhr.open("POST", "/api/upload");
         xhr.send(submitData);
       });
@@ -156,9 +175,12 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
       setIsSent(true);
       playSfx("success");
       triggerConfetti();
-    } catch {
+    } catch (err) {
       setIsSending(false);
-      alert("Something went wrong. Please try again.");
+      playSfx("error");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Something went wrong. Please try again."
+      );
     }
   };
 
@@ -271,6 +293,40 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
           </div>
         ))}
       </div>
+
+      {errorMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-xl p-4 mb-6 border border-red-200 dark:border-red-800 bg-red-50/60 dark:bg-red-950/30 backdrop-blur-xl"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <X className="w-3.5 h-3.5 text-red-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-sm font-medium text-red-700 dark:text-red-300"
+                style={{ fontFamily: "var(--font-jakarta)" }}
+              >
+                Upload failed
+              </p>
+              <p
+                className="text-sm text-red-600/80 dark:text-red-400/80 mt-1"
+                style={{ fontFamily: "var(--font-inter)" }}
+              >
+                {errorMessage}
+              </p>
+            </div>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="p-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors flex-shrink-0"
+            >
+              <X className="w-4 h-4 text-red-400" />
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       <motion.div
         layout
@@ -578,6 +634,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => {
+                setErrorMessage(null);
                 playSfx("click");
                 setStep(step - 1);
               }}
@@ -595,7 +652,7 @@ export default function ShareForm({ welcomeMessage }: { welcomeMessage: string }
             <motion.button
               whileHover={{ scale: canProceed() ? 1.02 : 1 }}
               whileTap={{ scale: canProceed() ? 0.98 : 1 }}
-              onClick={() => canProceed() && setStep(step + 1)}
+              onClick={() => canProceed() && (setErrorMessage(null), setStep(step + 1))}
               disabled={!canProceed()}
               className={cn(
                 "flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all",
